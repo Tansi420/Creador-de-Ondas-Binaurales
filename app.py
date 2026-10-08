@@ -1,64 +1,50 @@
 import os
 import time
 import glob
+import base64
 from gtts import gTTS
 from PIL import Image
-import base64
 import streamlit as st
 
 # Configuración de la página
 st.set_page_config(
-    page_title="Fábula Interactiva: Texto a Audio",
-    page_icon="📖",
+    page_title="Creador de Ondas Binaurales",
+    page_icon="🎧",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Estilos CSS personalizados con "colorcitos y cositas" estéticas
+# Estilos CSS personalizados para un aspecto moderno y relajante
 st.markdown("""
 <style>
     .main {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
     }
     .stButton>button {
-        background: linear-gradient(45deg, #FF416C, #FF4B2B);
-        color: white;
-        border-radius: 20px;
+        border-radius: 12px;
         font-weight: bold;
-        border: none;
-        padding: 10px 24px;
-        box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4);
-        transition: 0.3s ease;
+        background-color: #4a90e2;
+        color: white;
+        transition: 0.3s;
     }
     .stButton>button:hover {
-        background: linear-gradient(45deg, #FF4B2B, #FF416C);
-        box-shadow: 0 6px 20px rgba(255, 75, 43, 0.6);
+        background-color: #357abd;
+        border-color: #357abd;
     }
-    .fabula-card {
+    .wave-card {
         background-color: #ffffff;
-        padding: 25px;
-        border-radius: 16px;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-        border-left: 6px solid #6c5ce7;
-        margin-bottom: 20px;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        padding: 18px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        margin-bottom: 15px;
+        border-left: 5px solid #4a90e2;
     }
-    .sidebar .sidebar-content {
-        background-color: #ffeaa7;
-    }
-    .download-btn {
-        display: inline-block;
-        background-color: #00b894;
-        color: white;
-        padding: 10px 20px;
+    .info-box {
+        background-color: #e8f4fd;
+        padding: 15px;
         border-radius: 10px;
-        text-decoration: none;
-        font-weight: bold;
-        box-shadow: 0 4px 10px rgba(0, 184, 148, 0.3);
-    }
-    .download-btn:hover {
-        background-color: #00a884;
-        color: white;
+        border-left: 5px solid #2b6cb0;
+        margin-bottom: 20px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -67,118 +53,121 @@ st.markdown("""
 # BARRA LATERAL
 # ---------------------------------------------------------
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3342/3342137.png", width=80)
-    st.markdown("### 🎛️ Panel de Control")
-    st.info("Escribe, selecciona tu idioma preferido y convierte cualquier texto o la fábula clásica en voz alta al instante.")
-    st.markdown("---")
-    option_lang = st.selectbox(
-        "🌐 Selecciona el lenguaje",
-        ("Español", "English")
+    st.markdown("### 🎧 Guía de Sesión")
+    st.info(
+        "1. Selecciona o copia una de las **plantillas de ondas** recomendadas.\n"
+        "2. Pégala en el campo de texto principal.\n"
+        "3. Elige el idioma de síntesis de voz.\n"
+        "4. Haz clic en **'Convertir a Audio'** para escuchar y descargar."
     )
-    if option_lang == "Español":
-        lg = 'es'
-    else:
-        lg = 'en'
+    st.markdown("---")
+    try:
+        image = Image.open('monoaural.jpg')
+        st.image(image, width=250, caption="Frecuencias Binaurales")
+    except Exception:
+        st.warning("Imagen 'monoaural.jpg' no encontrada.")
+    st.markdown("---")
+    st.success("Estado: Listo para relajar 🌊")
 
 # ---------------------------------------------------------
 # CABECERA PRINCIPAL
 # ---------------------------------------------------------
-col_title, col_img = st.columns([3, 1])
-
-with col_title:
-    st.title("🎧 Conversor Mágico de Texto a Audio")
-    st.markdown("### Dale vida a tus lecturas y fábulas con voz de alta calidad.")
-
-with col_img:
-    try:
-        image = Image.open('gato_raton.png')
-        st.image(image, width=220, caption="El Gato y el Ratón")
-    except Exception:
-        st.warning("Imagen 'gato_raton.png' no encontrada. Asegúrate de incluirla en tu directorio.")
-
+st.title("🎧 Creador de Ondas Binaurales y Vocales")
+st.markdown(
+    "<p style='font-size: 17px; color: #555;'>Transforma secuencias de vocales y fonemas en ritmos constantes ideales para meditar, estudiar o practicar instrumentos musicales.</p>", 
+    unsafe_allow_html=True
+)
 st.markdown("---")
 
-# ---------------------------------------------------------
-# CREACIÓN DE DIRECTORIO TEMPORAL
-# ---------------------------------------------------------
+# Crear directorio temporal de forma segura
 try:
     os.makedirs("temp", exist_ok=True)
 except Exception:
     pass
 
 # ---------------------------------------------------------
-# SECCIÓN DE LA FÁBULA (ESTILIZADA EN TARJETA)
+# PLANTILLAS DE ONDAS
 # ---------------------------------------------------------
-st.markdown("### 📜 Una pequeña Fábula de Franz Kafka")
+st.subheader("✨ Plantillas de Ondas Recomendadas")
+st.write("Puedes copiar cualquiera de estas secuencias y hacerlas tan largas como quieras duplicándolas:")
 
-fabula_texto = (
-    "¡Ay! -dijo el ratón-. El mundo se hace cada día más pequeño. "
-    "Al principio era tan grande que le tenía miedo. Corría y corría y por cierto que me alegraba ver esos muros, "
-    "a diestra y siniestra, en la distancia. Pero esas paredes se estrechan tan rápido que me encuentro en el último cuarto "
-    "y ahí en el rincón está la trampa sobre la cual debo pasar. Todo lo que debes hacer es cambiar de rumbo -dijo el gato-... y se lo comió."
-)
+# Tarjetas visuales para las plantillas
+st.markdown("""
+<div class="wave-card">
+    <b>Onda 1 (Ritmo Constante / Estudiar):</b><br>
+    <code style="color: #d63384;">mmmmmmmm oooooooo uuuuuuuu mmmmmmmm mmmmmmmm oooooooo uuuuuuuu mmmmmmmm mmmmmmmm oooooooo uuuuuuuu mmmmmmmm mmmmmmmm oooooooo uuuuuuuu mmmmmmmm</code>
+</div>
 
-st.markdown(
-    f"""
-    <div class="fabula-card">
-        <p style="font-size: 17px; line-height: 1.6; color: #2d3436;">
-            <i>"{fabula_texto}"</i>
-        </p>
-        <p style="text-align: right; font-weight: bold; color: #6c5ce7; margin-bottom: 0;">— Franz Kafka</p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+<div class="wave-card" style="border-left-color: #28a745;">
+    <b>Onda 2 (Fluctuación Suave):</b><br>
+    <code style="color: #28a745;">uuuuuuuuu... oooooooo... uuuuuuuuu... oooooooo... uuuuuuuuu... oooooooo... uuuuuuuuu... oooooooo...</code>
+</div>
 
-# ---------------------------------------------------------
-# ENTRADA DE TEXTO
-# ---------------------------------------------------------
-st.markdown("### ✍️ Tu Turno")
-st.write("Puedes copiar la fábula de arriba o escribir cualquier texto personalizado que desees escuchar:")
-text = st.text_area("Ingrese el texto a escuchar:", value=fabula_texto, height=130)
+<div class="wave-card" style="border-left-color: #ffc107;">
+    <b>Onda 3 (Armónicos Profundos):</b><br>
+    <code style="color: #b8860b;">mmmmm-ooooooh-mmmmm-uuuuhhhh-mmmmm mmmmm-ooooooh-mmmmm-uuuuhhhh-mmmmm mmmmm-ooooooh-mmmmm-uuuuhhhh-mmmmm</code>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# FUNCIÓN DE TEXTO A VOZ
+# ENTRADA DE DATOS Y CONFIGURACIÓN
+# ---------------------------------------------------------
+col1, col2 = st.columns([3, 1])
+
+with col1:
+    text = st.text_area("✍️ Ingresa el texto u onda a escuchar:", placeholder="Pega aquí tu secuencia de vocales o fonemas...")
+
+with col2:
+    st.markdown("<br>", unsafe_allow_html=True)
+    option_lang = st.selectbox(
+        "🌐 Selecciona el idioma",
+        ("Español", "English")
+    )
+
+if option_lang == "Español":
+    lg = 'es'
+else:
+    lg = 'en'
+
+# ---------------------------------------------------------
+# CONVERSIÓN Y REPRODUCCIÓN
 # ---------------------------------------------------------
 def text_to_speech(text_input, tld_val, lang_code):
-    tts = gTTS(text_input, lang=lang_code, tld=tld_val, slow=False)
+    tts = gTTS(text_input, lang=lang_code)
     try:
         my_file_name = text_input[0:20].strip().replace(" ", "_")
     except Exception:
         my_file_name = "audio"
+    
     file_path = f"temp/{my_file_name}.mp3"
     tts.save(file_path)
     return my_file_name, text_input
 
-# ---------------------------------------------------------
-# ACCIÓN DE CONVERSIÓN
-# ---------------------------------------------------------
-st.markdown("<br>", unsafe_allow_html=True)
-if st.button("✨ Convertir a Audio"):
+if st.button("🚀 Convertir a Audio", use_container_width=True):
     if text.strip() == "":
-        st.warning("Por favor, ingresa algún texto para poder convertirlo.")
+        st.warning("⚠️ Por favor, ingresa o selecciona texto antes de convertir.")
     else:
-        with st.spinner("🎙️ Sintetizando voz y generando audio..."):
+        with st.spinner("🎵 Generando ondas de audio... Por favor espera."):
             result, output_text = text_to_speech(text, 'com', lg)
-            audio_path = f"temp/{result}.mp3"
+            audio_file_path = f"temp/{result}.mp3"
             
-            if os.path.exists(audio_path):
-                with open(audio_path, "rb") as audio_file:
+            if os.path.exists(audio_file_path):
+                st.success("¡Audio generado con éxito!")
+                st.markdown("### 🎧 Reproductor de Audio:")
+                
+                with open(audio_file_path, "rb") as audio_file:
                     audio_bytes = audio_file.read()
                 
-                st.success("¡Audio generado con éxito!")
-                st.markdown("#### 🎧 Reproductor:")
                 st.audio(audio_bytes, format="audio/mp3", start_time=0)
-
-                # Botón de descarga estilizado
-                with open(audio_path, "rb") as f:
-                    data = f.read()
-                bin_str = base64.b64encode(data).decode()
-                href = f'<a class="download-btn" href="data:application/octet-stream;base64,{bin_str}" download="{result}.mp3">📥 Descargar Audio MP3</a>'
-                st.markdown("<br>", unsafe_allow_html=True)
-                st.markdown(href, unsafe_allow_html=True)
+                
+                # Botón de descarga elegante en Base64
+                b64_data = base64.b64encode(audio_bytes).decode()
+                download_href = f'<a href="data:application/octet-stream;base64,{b64_data}" download="{result}.mp3" style="text-decoration:none;"><div style="background-color:#28a745;color:white;padding:10px 20px;border-radius:8px;text-align:center;font-weight:bold;margin-top:15px;">📥 Descargar Archivo de Audio (.mp3)</div></a>'
+                st.markdown(download_href, unsafe_allow_html=True)
             else:
-                st.error("Ocurrió un error al generar el archivo de audio.")
+                st.error("Hubo un error al crear el archivo de audio.")
 
 # ---------------------------------------------------------
 # LIMPIEZA AUTOMÁTICA DE ARCHIVOS ANTIGUOS
