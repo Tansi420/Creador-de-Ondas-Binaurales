@@ -8,7 +8,7 @@ import streamlit as st
 
 # Configuración de la página
 st.set_page_config(
-    page_title="Creador de Ondas Binaurales",
+    page_title="Creador de Ondas",
     page_icon="🎧",
     layout="wide",
     initial_sidebar_state="expanded"
